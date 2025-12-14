@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import qrcode
 import os
 from datetime import datetime
+from azure.storage.blob import BlobServiceClient
 
 app = Flask(__name__)
 
@@ -9,20 +10,37 @@ app = Flask(__name__)
 def home():
     return "QR Generator API is running"
 
-@app.route("/generate-qr", methods=["GET"])
+@app.route("/generate-qr")
 def generate_qr():
     text = request.args.get("text")
 
     if not text:
-        return jsonify({"error": "Missing text parameter"}), 400
+        return jsonify({"error": "Text parameter is required"}), 400
 
-    filename = f"qr_{datetime.now().strftime('%Y%m%d%H%M%S')}.png"
-    filepath = os.path.join("/tmp", filename)
+    filename = f"qr_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.png"
+    file_path = os.path.join("/tmp", filename)
 
+    # Générer QR
     img = qrcode.make(text)
-    img.save(filepath)
+    img.save(file_path)
+
+    # Connexion Blob Storage
+    connect_str = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+    container_name = os.environ.get("BLOB_CONTAINER_NAME")
+
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    blob_client = blob_service_client.get_blob_client(
+        container=container_name,
+        blob=filename
+    )
+
+    # Upload vers Blob
+    with open(file_path, "rb") as data:
+        blob_client.upload_blob(data, overwrite=True)
+
+    blob_url = blob_client.url
 
     return jsonify({
         "message": "QR Code generated",
-        "file": filename
+        "url": blob_url
     })
