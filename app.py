@@ -1,10 +1,3 @@
-from azure.monitor.opentelemetry import configure_azure_monitor
-import os
-
-configure_azure_monitor(
-    connection_string=os.environ.get("APPLICATIONINSIGHTS_CONNECTION_STRING"),
-    enable_live_metrics=True
-)
 from flask import Flask, request, jsonify, send_from_directory
 import qrcode
 import os
