@@ -1,14 +1,14 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import qrcode
 import os
 from datetime import datetime
 from azure.storage.blob import BlobServiceClient
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 @app.route("/")
 def home():
-    return "QR Generator API is running"
+    return send_from_directory("static", "index.html")
 
 @app.route("/generate-qr")
 def generate_qr():

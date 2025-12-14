@@ -1,19 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>QR Generator</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>QR Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        input {
+            padding: 10px;
+            width: 300px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        img {
+            margin-top: 30px;
+            max-width: 300px;
+        }
+    </style>
 </head>
 <body>
 
-<h1>QR Code Generator</h1>
+    <h1>QR Code Generator</h1>
 
-<input type="text" id="text" placeholder="Enter text or link">
-<button onclick="generateQR()">Generate</button>
+    <input type="text" id="qrText" placeholder="Enter text..." />
+    <button onclick="generateQR()">Generate</button>
 
-<br><br>
-<img id="qr" />
+    <div id="result">
+        <img id="qrImage" />
+    </div>
 
-<script src="script.js"></script>
+    <script>
+        async function generateQR() {
+            const text = document.getElementById("qrText").value;
+
+            if (!text) {
+                alert("Please enter some text");
+                return;
+            }
+
+            const response = await fetch(`/generate-qr?text=${encodeURIComponent(text)}`);
+            const data = await response.json();
+
+            if (data.url) {
+                document.getElementById("qrImage").src = data.url;
+            } else {
+                alert("QR generation failed");
+            }
+        }
+    </script>
+
 </body>
 </html>
