@@ -3,3 +3,6 @@ qrcode[pil]
 Pillow
 gunicorn
 azure-storage-blob
+opentelemetry-api
+opentelemetry-sdk
+azure-monitor-opentelemetry
