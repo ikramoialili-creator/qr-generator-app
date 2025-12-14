@@ -1,41 +1,43 @@
-from flask import Flask, request, send_file, render_template_string
+from flask import Flask, request, jsonify
 import qrcode
-import io
+import os
+CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+import uuid
+from azure.storage.blob import BlobServiceClient
 
 app = Flask(__name__)
 
-HTML_PAGE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>QR Generator</title>
-</head>
-<body>
-    <h2>QR Code Generator</h2>
-    <form action="/generate-qr" method="get">
-        <input type="text" name="text" placeholder="Enter text or URL" required>
-        <button type="submit">Generate QR</button>
-    </form>
-</body>
-</html>
-"""
+# 🔐 Azure Blob Storage config
+CONNECTION_STRING = "PASTE_YOUR_CONNECTION_STRING_HERE"
+CONTAINER_NAME = "qrcodes"
 
-@app.route("/")
-def index():
-    return render_template_string(HTML_PAGE)
+blob_service_client = BlobServiceClient.from_connection_string(CONNECTION_STRING)
+container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
 @app.route("/generate-qr")
 def generate_qr():
     text = request.args.get("text")
+
     if not text:
-        return "Missing text parameter", 400
+        return jsonify({"error": "Text parameter is required"}), 400
 
+    # Générer QR
     qr = qrcode.make(text)
-    img_io = io.BytesIO()
-    qr.save(img_io, "PNG")
-    img_io.seek(0)
+    img_bytes = io.BytesIO()
+    qr.save(img_bytes, format="PNG")
+    img_bytes.seek(0)
 
-    return send_file(img_io, mimetype="image/png")
+    # Nom unique
+    filename = f"{uuid.uuid4()}.png"
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000)
+    # Upload Blob
+    blob_client = container_client.get_blob_client(filename)
+    blob_client.upload_blob(img_bytes, overwrite=True)
+
+    # URL publique
+    blob_url = blob_client.url
+
+    return jsonify({
+        "message": "QR Code generated",
+        "url": blob_url
+    })
